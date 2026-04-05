@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>和暦⇔西暦 変換ツール</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 data-i18n="title">和暦⇔西暦 変換ツール</h1>
+    <p class="subtitle" data-i18n="subtitle">昭和・平成・令和に対応</p>
+
+    <!-- 手動変換 -->
+    <div class="manual-section">
+      <h2 data-i18n="heading.convert">日付を変換</h2>
+      <div class="converter-row">
+        <div class="input-group">
+          <label data-i18n="label.wareki">和暦（例: S49.9.24, 平成1年1月8日）</label>
+          <input type="text" id="wareki-input" placeholder="R6.3.22">
+          <div id="wareki-error" class="error-msg"></div>
+        </div>
+        <div class="arrow">⇄</div>
+        <div class="input-group">
+          <label data-i18n="label.seireki">西暦（例: 2024/3/22, 1989-01-08）</label>
+          <input type="text" id="seireki-input" placeholder="2024/03/22">
+          <div id="seireki-error" class="error-msg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ファイル変換 -->
+    <div class="file-section">
+      <h2 data-i18n="heading.fileBatch">ファイル一括変換</h2>
+      <div id="drop-zone">
+        <div class="drop-icon">📄</div>
+        <div class="drop-text" data-i18n="dropzone.text">CSVファイルをここにドロップ<br>またはクリックして選択</div>
+      </div>
+      <input type="file" id="file-input" accept=".csv,.tsv,.txt">
+      <div id="file-info"></div>
+
+      <div id="preview-section">
+        <div class="options-row">
+          <div>
+            <label data-i18n="label.direction">変換方向</label>
+            <select id="direction">
+              <option value="wareki-to-seireki" data-i18n="option.wareToSei">和暦 → 西暦</option>
+              <option value="seireki-to-wareki" data-i18n="option.seiToWare">西暦 → 和暦</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="label.format">和暦フォーマット</label>
+            <select id="output-format">
+              <option value="alpha" data-i18n="option.alpha">アルファベット（R6.3.22）</option>
+              <option value="kanji" data-i18n="option.kanji">漢字（令和6年3月22日）</option>
+            </select>
+          </div>
+          <button id="convert-btn" disabled data-i18n="btn.convert">変換してダウンロード</button>
+        </div>
+        <div class="preview-tables">
+          <div class="preview-block">
+            <h3 data-i18n="preview.before">変換前</h3>
+            <div class="table-wrapper">
+              <table id="preview-table"></table>
+            </div>
+          </div>
+          <div class="preview-block">
+            <h3 data-i18n="preview.after">変換後</h3>
+            <div class="table-wrapper">
+              <table id="preview-table-converted"></table>
+            </div>
+          </div>
+        </div>
+        <div id="status-msg"></div>
+      </div>
+    </div>
+
+    <!-- ヘルプ -->
+    <div class="help-section">
+      <details>
+        <summary data-i18n="help.summary">対応フォーマット一覧</summary>
+        <div class="help-content">
+          <table>
+            <thead>
+              <tr><th data-i18n="help.th.era">元号</th><th data-i18n="help.th.abbrev">略称</th><th data-i18n="help.th.period">期間</th></tr>
+            </thead>
+            <tbody>
+              <tr><td data-i18n="help.showa">昭和</td><td>S</td><td>1926/12/25 〜 1989/01/07</td></tr>
+              <tr><td data-i18n="help.heisei">平成</td><td>H</td><td>1989/01/08 〜 2019/04/30</td></tr>
+              <tr><td data-i18n="help.reiwa">令和</td><td>R</td><td>2019/05/01 〜</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:0.75rem;" data-i18n="help.footnote">区切り文字: ドット(.) ハイフン(-) スラッシュ(/) 年月日 に対応<br>
+          「元年」表記にも対応（例: 令和元年5月1日）</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <script src="converter.js"></script>
+  <script src="i18n.js"></script>
+  <script>
+    // 手動変換のリアルタイム処理
+    const warekiInput = document.getElementById('wareki-input');
+    const seirekiInput = document.getElementById('seireki-input');
+    const warekiError = document.getElementById('wareki-error');
+    const seirekiError = document.getElementById('seireki-error');
+
+    let updating = false;
+
+    warekiInput.addEventListener('input', () => {
+      if (updating) return;
+      updating = true;
+      warekiError.textContent = '';
+      seirekiError.textContent = '';
+      const val = warekiInput.value.trim();
+
+      if (!val) {
+        seirekiInput.value = '';
+        updating = false;
+        return;
+      }
+
+      const parsed = parseWareki(val);
+      if (!parsed) {
+        warekiError.textContent = t('error.invalidFormat');
+        seirekiInput.value = '';
+        updating = false;
+        return;
+      }
+
+      if (!isValidWareki(parsed)) {
+        warekiError.textContent = t('error.outOfRange', { era: parsed.era.kanji });
+        seirekiInput.value = '';
+        updating = false;
+        return;
+      }
+
+      const seireki = warekiToSeireki(parsed);
+      seirekiInput.value = seirekiToString(seireki, '/');
+      updating = false;
+    });
+
+    seirekiInput.addEventListener('input', () => {
+      if (updating) return;
+      updating = true;
+      warekiError.textContent = '';
+      seirekiError.textContent = '';
+      const val = seirekiInput.value.trim();
+
+      if (!val) {
+        warekiInput.value = '';
+        updating = false;
+        return;
+      }
+
+      const parsed = parseSeireki(val);
+      if (!parsed) {
+        seirekiError.textContent = t('error.invalidFormat');
+        warekiInput.value = '';
+        updating = false;
+        return;
+      }
+
+      const wareki = seirekiToWareki([parsed.year, parsed.month, parsed.day], 'alpha');
+      if (!wareki) {
+        seirekiError.textContent = t('error.noWareki');
+        warekiInput.value = '';
+        updating = false;
+        return;
+      }
+
+      warekiInput.value = wareki;
+      updating = false;
+    });
+  </script>
+  <script src="filehandler.js"></script>
+</body>
+</html>
