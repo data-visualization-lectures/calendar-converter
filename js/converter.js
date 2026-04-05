@@ -3,6 +3,8 @@ const ERAS = [
   { kanji: '令和', alpha: 'R', startYear: 2019, start: [2019, 5, 1],  end: null },
   { kanji: '平成', alpha: 'H', startYear: 1989, start: [1989, 1, 8],  end: [2019, 4, 30] },
   { kanji: '昭和', alpha: 'S', startYear: 1926, start: [1926, 12, 25], end: [1989, 1, 7] },
+  { kanji: '大正', alpha: 'T', startYear: 1912, start: [1912, 7, 30],  end: [1926, 12, 24] },
+  { kanji: '明治', alpha: 'M', startYear: 1868, start: [1868, 1, 25],  end: [1912, 7, 29] },
 ];
 
 // 日付比較用ユーティリティ（[y,m,d]配列同士）
@@ -18,13 +20,13 @@ function parseWareki(str) {
   if (!str || typeof str !== 'string') return null;
   str = str.trim();
 
-  const re = /^(S|H|R|昭和|平成|令和)\s*(元|\d{1,2})\s*[.\-\/年]\s*(\d{1,2})\s*[.\-\/月]\s*(\d{1,2})\s*日?\s*$/i;
+  const re = /^(M|T|S|H|R|明治|大正|昭和|平成|令和)\s*(元|\d{1,2})\s*[.\-\/年]\s*(\d{1,2})\s*[.\-\/月]\s*(\d{1,2})\s*日?\s*$/i;
   const m = str.match(re);
   if (!m) return null;
 
   let eraInput = m[1].toUpperCase();
   // 漢字→アルファベット正規化
-  const kanjiMap = { '昭和': 'S', '平成': 'H', '令和': 'R' };
+  const kanjiMap = { '明治': 'M', '大正': 'T', '昭和': 'S', '平成': 'H', '令和': 'R' };
   const eraAlpha = kanjiMap[m[1]] || eraInput;
 
   const era = ERAS.find(e => e.alpha === eraAlpha);

@@ -20,25 +20,6 @@
   <div class="container">
     <h1 data-i18n="title">和暦⇔西暦 変換ツール</h1>
     <p class="subtitle" data-i18n="subtitle">昭和・平成・令和に対応</p>
-
-    <!-- 手動変換 -->
-    <div class="manual-section">
-      <h2 data-i18n="heading.convert">日付を変換</h2>
-      <div class="converter-row">
-        <div class="input-group">
-          <label data-i18n="label.wareki">和暦（例: S49.9.24, 平成1年1月8日）</label>
-          <input type="text" id="wareki-input" placeholder="R6.3.22">
-          <div id="wareki-error" class="error-msg"></div>
-        </div>
-        <div class="arrow">⇄</div>
-        <div class="input-group">
-          <label data-i18n="label.seireki">西暦（例: 2024/3/22, 1989-01-08）</label>
-          <input type="text" id="seireki-input" placeholder="2024/03/22">
-          <div id="seireki-error" class="error-msg"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- ファイル変換 -->
     <div class="file-section">
       <h2 data-i18n="heading.fileBatch">ファイル一括変換</h2>
@@ -95,6 +76,8 @@
               <tr><th data-i18n="help.th.era">元号</th><th data-i18n="help.th.abbrev">略称</th><th data-i18n="help.th.period">期間</th></tr>
             </thead>
             <tbody>
+              <tr><td data-i18n="help.meiji">明治</td><td>M</td><td>1868/01/25 〜 1912/07/29</td></tr>
+              <tr><td data-i18n="help.taisho">大正</td><td>T</td><td>1912/07/30 〜 1926/12/24</td></tr>
               <tr><td data-i18n="help.showa">昭和</td><td>S</td><td>1926/12/25 〜 1989/01/07</td></tr>
               <tr><td data-i18n="help.heisei">平成</td><td>H</td><td>1989/01/08 〜 2019/04/30</td></tr>
               <tr><td data-i18n="help.reiwa">令和</td><td>R</td><td>2019/05/01 〜</td></tr>
@@ -107,83 +90,8 @@
     </div>
   </div>
 
-  <script src="converter.js"></script>
-  <script src="i18n.js"></script>
-  <script>
-    // 手動変換のリアルタイム処理
-    const warekiInput = document.getElementById('wareki-input');
-    const seirekiInput = document.getElementById('seireki-input');
-    const warekiError = document.getElementById('wareki-error');
-    const seirekiError = document.getElementById('seireki-error');
-
-    let updating = false;
-
-    warekiInput.addEventListener('input', () => {
-      if (updating) return;
-      updating = true;
-      warekiError.textContent = '';
-      seirekiError.textContent = '';
-      const val = warekiInput.value.trim();
-
-      if (!val) {
-        seirekiInput.value = '';
-        updating = false;
-        return;
-      }
-
-      const parsed = parseWareki(val);
-      if (!parsed) {
-        warekiError.textContent = t('error.invalidFormat');
-        seirekiInput.value = '';
-        updating = false;
-        return;
-      }
-
-      if (!isValidWareki(parsed)) {
-        warekiError.textContent = t('error.outOfRange', { era: parsed.era.kanji });
-        seirekiInput.value = '';
-        updating = false;
-        return;
-      }
-
-      const seireki = warekiToSeireki(parsed);
-      seirekiInput.value = seirekiToString(seireki, '/');
-      updating = false;
-    });
-
-    seirekiInput.addEventListener('input', () => {
-      if (updating) return;
-      updating = true;
-      warekiError.textContent = '';
-      seirekiError.textContent = '';
-      const val = seirekiInput.value.trim();
-
-      if (!val) {
-        warekiInput.value = '';
-        updating = false;
-        return;
-      }
-
-      const parsed = parseSeireki(val);
-      if (!parsed) {
-        seirekiError.textContent = t('error.invalidFormat');
-        warekiInput.value = '';
-        updating = false;
-        return;
-      }
-
-      const wareki = seirekiToWareki([parsed.year, parsed.month, parsed.day], 'alpha');
-      if (!wareki) {
-        seirekiError.textContent = t('error.noWareki');
-        warekiInput.value = '';
-        updating = false;
-        return;
-      }
-
-      warekiInput.value = wareki;
-      updating = false;
-    });
-  </script>
-  <script src="filehandler.js"></script>
+  <script src="js/converter.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/filehandler.js"></script>
 </body>
 </html>
